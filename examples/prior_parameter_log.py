@@ -7,8 +7,6 @@ from scipy.integrate import simpson as integrate
 Doesn't work with likelhood one has to work with log likleihood
 """
 
-
-
 dataset = [
     [2.668, 0.729, 1.697, 1.738, 2.559, 4.964],
     [3.002, 3.035, 1.998, 0.393, 7.12, 4.57],
@@ -17,13 +15,13 @@ dataset = [
 
 
 @numba.vectorize('f8(f8, f8, f8)', nopython=True)
-def likelihood(data, mu, sigma):
-    return 1 / (np.sqrt(2.0 * np.pi) * sigma) * np.exp(-1 / (sigma ** 2 * 2.0) * (data - mu) ** 2)
+def log_likelihood(data, mu, sigma):
+    return np.log(1 / (np.sqrt(2.0 * np.pi) * sigma)) + (-1 / (sigma ** 2 * 2.0) * (data - mu) ** 2)
 
 
 figs, axes = plt.subplots(nrows=3)
 
-mins = [0, 1, -0]
+mins = [0, 1, 10]
 maxs = [5, 6, 20]
 
 for idx, data in enumerate(dataset):
@@ -35,11 +33,15 @@ for idx, data in enumerate(dataset):
     posterior = np.zeros_like(mu)
 
     for i in range(len(posterior)):
-        posterior[i] = np.prod(likelihood(data, mu[i], sigma))
+        posterior[i] = np.sum(log_likelihood(data, mu[i], sigma))
+
+    posterior -= np.max(posterior)
+
+    posterior = np.exp(posterior)
 
     norm = integrate(posterior, mu)
 
-    #posterior /= norm
+    posterior /= norm
 
     axes[idx].plot(mu, posterior, ls='-')
 
